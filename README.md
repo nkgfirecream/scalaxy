@@ -1,2 +1,2 @@
 # scalaxy
-Column-based dsitributed NewSQL database
+Column-based distributed NewSQL database
