@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package proto;
+
+message QueryRequest {
+	string query = 1;
+};
+
+message Value {
+	uint32 type = 1;
+	bytes  data = 2;
+};
+
+message QueryResponse {
+	repeated Value columns = 1;
+};
+
+service ClientService {
+	rpc Query(QueryRequest) returns (stream QueryResponse);
+};
