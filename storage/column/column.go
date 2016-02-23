@@ -31,7 +31,7 @@ func (col *Column) Write(v int64) {
 	shardId := fastrand.FastRand(col.shards)
 	var index int
 	for {
-		index := atomic.AddUint64(&col.memtableIndexes[shardId], 1)
+		index = atomic.AddUint64(&col.memtableIndexes[shardId], 1)
 		if index < col.memtableSize {
 			break
 		} else if index > col.memtableSize {
