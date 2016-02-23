@@ -1,2 +1,2 @@
 build:
-	gcc -Wall -O3 -o column_test column.c
+	gcc -Wall -O0 -o column_test column.c
