@@ -1,3 +1,3 @@
 package fastrand
 
-func FastRand(max uint64) uint64
+func FastRand(max int) int

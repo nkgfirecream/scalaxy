@@ -1,4 +1,4 @@
-// func Rand(x uint64) uint64
+// func FastRand(x int) int
 TEXT ·FastRand(SB),$0
     MOVQ x+0(FP), BX
     SUBQ $1, BX
