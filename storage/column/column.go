@@ -21,7 +21,7 @@ func Open(path string, memtableSize int) *Column {
 func (col *Column) WriteInt64(v int64) {
 	var index int
 	for {
-		index := atomic.AddUint64(&col.memtableOffset, 1)
+		index = atomic.AddUint64(&col.memtableOffset, 1)
 		if index < col.memtableSize {
 			break
 		} else if index > col.memtableSize {
