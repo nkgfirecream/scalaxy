@@ -1,59 +1,71 @@
 package column
 
 import (
+	"github.com/scalaxy/scalaxy/fastrand"
+	"reflect"
 	"runtime"
 	"sync/atomic"
+	"unsafe"
 )
 
 type Column struct {
-	memtable       []int64
-	memtableSize   uint64
-	memtableOffset uint64
+	memtables       [][]int64
+	memtableSize    uint64
+	memtableIndexes []uint64
+	shards          int
+	shardCurrent    uint64
 }
 
-func Open(path string, memtableSize int) *Column {
+func Open(path string, memtableSize, shards int) *Column {
 	col := &Column{}
+	col.shards = shards
 	col.memtableSize = uint64(memtableSize)
-	col.memtable = make([]int64, memtableSize)
+	col.memtableIndexes = make([]uint64, shards)
+	col.memtables = make([][]int64, shards)
+	for i := 0; i < shards; i++ {
+		col.memtables[i] = make([]int64, memtableSize)
+	}
 	return col
 }
 
-func (col *Column) WriteInt64(v int64) {
+func (col *Column) Write(v int64) {
+	shardId := fastrand.FastRand(col.shards)
+	//shardId := int(atomic.AddUint64(&col.shardCurrent, 1)) % col.shards
 	var index int
 	for {
-		index = atomic.AddUint64(&col.memtableOffset, 1)
+		index := atomic.AddUint64(&col.memtableIndexes[shardId], 1)
 		if index < col.memtableSize {
 			break
 		} else if index > col.memtableSize {
 			runtime.Gosched()
 			continue
 		} else {
-			col.drop()
+			col.drop(shardId)
+			atomic.StoreUint64(&col.memtableIndexes[shardId], 0)
 			index = 0
 			break
 		}
 	}
-	col.memtable[index] = v
+	col.memtables[shardId][index] = v
 }
-
-func (col *Column) drop() {
-	atomic.StoreUint64(&col.memtableOffset, 0)
+func (col *Column) drop(shardId int) {
+	//col.memtableIndexes[shardId] = 0
 }
 
 func (col *Column) Close() {
 
 }
 
-//const (
-//	BYTES_IN_INT64 = 8
-//)
-//
+const (
+	BYTES_IN_INT64 = 8
+)
+
+func UnsafeCaseInt64sToBytes(val []int64) []byte {
+	hdr := reflect.SliceHeader{Data: uintptr(unsafe.Pointer(&val)), Len: BYTES_IN_INT64, Cap: BYTES_IN_INT64}
+	return *(*[]byte)(unsafe.Pointer(&hdr))
+}
+
 //func UnsafeCaseInt64ToBytes(val int64) []byte {
-//	hdr := reflect.SliceHeader{Data: uintptr(unsafe.Pointer(&val)), Len: BYTES_IN_INT64, Cap: BYTES_IN_INT64}
-//	return *(*[]byte)(unsafe.Pointer(&hdr))
-//}
-//
-//func UnsafeCaseInt64sToBytes(val []int64) []byte {
 //	hdr := reflect.SliceHeader{Data: uintptr(unsafe.Pointer(&val)), Len: BYTES_IN_INT64, Cap: BYTES_IN_INT64}
 //	return *(*[]byte)(unsafe.Pointer(&hdr))
 //}

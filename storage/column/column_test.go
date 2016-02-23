@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-var randInts = generateInt64(1024 * 1024)
-
 func BenchmarkRand(b *testing.B) {
 	b.SetParallelism(8)
 	b.ResetTimer()
@@ -44,9 +42,11 @@ func BenchmarkAtomicLoadUint64(b *testing.B) {
 	b.SetParallelism(8)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
+		var a uint64
 		for pb.Next() {
-			atomic.LoadUint64(&counter)
+			a = atomic.LoadUint64(&counter)
 		}
+		a = a
 	})
 }
 
@@ -76,17 +76,21 @@ func BenchmarkMutexAddUint64(b *testing.B) {
 }
 
 func BenchmarkColumnInsert(b *testing.B) {
-	column := Open("column_int64", 1024*1024)
+	var randInts = generateInt64(500000)
+	column := Open("column_int64", 1024*1024, 64)
 	defer column.Close()
 	b.SetBytes(8)
 	cc := 8
 	b.SetParallelism(cc)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
-		i := 0
+		counter := 0
 		for pb.Next() {
-			column.WriteInt64(randInts[i%1024*1024])
-			i++
+			column.Write(randInts[counter])
+			counter++
+			if counter == cc {
+				counter = 0
+			}
 		}
 	})
 }
