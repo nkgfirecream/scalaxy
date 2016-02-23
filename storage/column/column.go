@@ -6,48 +6,38 @@ import (
 )
 
 type Column struct {
-	memtables       [][]int64
-	memtableSize    uint64
-	memtableIndexes []uint64
-	shards          int
-	shardCurrent    uint64
+	memtable       []int64
+	memtableSize   uint64
+	memtableOffset uint64
 }
 
-func Open(path string, memtableSize, shards int) *Column {
+func Open(path string, memtableSize int) *Column {
 	col := &Column{}
-	col.shards = shards
 	col.memtableSize = uint64(memtableSize)
-	col.memtableIndexes = make([]uint64, shards)
-	col.memtables = make([][]int64, shards)
-	for i := 0; i < shards; i++ {
-		col.memtables[i] = make([]int64, memtableSize)
-	}
+	col.memtable = make([]int64, memtableSize)
 	return col
 }
 
 func (col *Column) WriteInt64(v int64) {
-	shardId := int(atomic.AddUint64(&col.shardCurrent, 1)) % col.shards
 	var index int
 	for {
-		index := atomic.AddUint64(&col.memtableIndexes[shardId], 1)
+		index := atomic.AddUint64(&col.memtableOffset, 1)
 		if index < col.memtableSize {
 			break
 		} else if index > col.memtableSize {
 			runtime.Gosched()
 			continue
 		} else {
-			col.drop(shardId)
-			atomic.StoreUint64(&col.memtableIndexes[shardId], 0)
+			col.drop()
 			index = 0
 			break
 		}
 	}
-	col.memtables[shardId][index] = v
+	col.memtable[index] = v
 }
 
-func (col *Column) drop(shardId int) {
-	// Just reset slice
-	col.memtables[shardId] = col.memtables[shardId][:]
+func (col *Column) drop() {
+	atomic.StoreUint64(&col.memtableOffset, 0)
 }
 
 func (col *Column) Close() {

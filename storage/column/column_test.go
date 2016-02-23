@@ -76,7 +76,7 @@ func BenchmarkMutexAddUint64(b *testing.B) {
 }
 
 func BenchmarkColumnInsert(b *testing.B) {
-	column := Open("column_int64", 1024*1024, 8)
+	column := Open("column_int64", 1024*1024)
 	defer column.Close()
 	b.SetBytes(8)
 	cc := 8
