@@ -3,7 +3,6 @@ package column
 import (
 	"github.com/scalaxy/scalaxy/fastrand"
 	"reflect"
-	"runtime"
 	"sync/atomic"
 	"unsafe"
 )
@@ -30,14 +29,12 @@ func Open(path string, memtableSize, shards int) *Column {
 
 func (col *Column) Write(v int64) {
 	shardId := fastrand.FastRand(col.shards)
-	//shardId := int(atomic.AddUint64(&col.shardCurrent, 1)) % col.shards
 	var index int
 	for {
 		index := atomic.AddUint64(&col.memtableIndexes[shardId], 1)
 		if index < col.memtableSize {
 			break
 		} else if index > col.memtableSize {
-			runtime.Gosched()
 			continue
 		} else {
 			col.drop(shardId)
@@ -48,8 +45,8 @@ func (col *Column) Write(v int64) {
 	}
 	col.memtables[shardId][index] = v
 }
+
 func (col *Column) drop(shardId int) {
-	//col.memtableIndexes[shardId] = 0
 }
 
 func (col *Column) Close() {
