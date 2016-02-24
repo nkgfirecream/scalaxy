@@ -77,7 +77,7 @@ func BenchmarkMutexAddUint64(b *testing.B) {
 
 func BenchmarkColumnInsert(b *testing.B) {
 	var randInts = generateInt64(500000)
-	column := Open("column_int64", 100000, 1024)
+	column := Open("column_int64", 10000000, 64)
 	defer column.Close()
 	b.SetBytes(8)
 	cc := 8
