@@ -29,7 +29,7 @@ func Open(path string, memtableSize, shards int) *Column {
 
 func (col *Column) Write(v int64) {
 	shardId := fastrand.FastRand(col.shards)
-	var index int
+	var index uint64
 	for {
 		index = atomic.AddUint64(&col.memtableIndexes[shardId], 1)
 		if index < col.memtableSize {
